@@ -1,0 +1,15 @@
+#! /usr/bin/env ruby
+
+message = ARGV[0]
+commit_hash = String.new
+
+system('git', 'checkout', 'master')
+system('git', 'merge', '--no-ff', '--no-commit', 'draft')
+
+IO.popen(['git', 'commit', '-m', message]) { |line|
+	commit_hash << line.read.to_s[/\[master .*\]/][8..-2]
+}
+
+new_name = 'draft-' + commit_hash.gsub(/\s/, "")
+system('git', 'branch', '-m', 'draft', new_name)
+system('git', 'checkout', '-b', 'draft')
