@@ -4,10 +4,17 @@ from pandocfilters import RawInline, RawBlock, walk, stringify, toJSONFilter, St
 power_symbol = '|'
 seperator_symbol = ':'
 string_keys = ['Str', 'Code', 'Math', 'LineBreak', 'Space', 'RawInline']
-other_keys = ['Plain', 'Para', 'CodeBlock', 'RawBlock', 'BlockQuote', 'OrderedList', 'BulletList', 'DefinitionList', 'Header', 'HorizontalRule', 'Table', 'Div', 'Null', 'Emph', 'Strong', 'Strikeout', 'Superscript', 'Subscript', 'SmallCaps', 'Quoted', 'Cite', 'Link', 'Image', 'Note', 'Span']
+other_keys = ( ['Plain', 'Para', 'CodeBlock', 'RawBlock', 'BlockQuote',
+                'OrderedList', 'BulletList', 'DefinitionList', 'Header',
+                'HorizontalRule', 'Table', 'Div', 'Null', 'Emph', 'Strong',
+                'Strikeout', 'Superscript', 'Subscript', 'SmallCaps', 'Quoted',
+                'Cite', 'Link', 'Image', 'Note', 'Span'] )
 
 """
 Does annotation stuff. For use with edNotes.sty.
+HORRIFICALLY FRAGILE HORRIFICALLY HACKY DO NOT USE
+ONCE PANDOC IMPLEMENTS A PROPER METHOD FOR FILTERING
+NOTES.
 """
 
 class WalkFilter(object):
@@ -19,7 +26,7 @@ class WalkFilter(object):
     def filter(self, key, val, fmt, meta):
         if key == 'Para':
             return walk(val, self.filter, "", {})
-        if self.powersym and val == power_symbol:
+        elif self.powersym and val == power_symbol:
             self.powersym = False
             return [Str("")]
         elif self.powersym_space and key == 'Space':
@@ -41,14 +48,19 @@ def latexInline(s):
 def parse(key, val, fmt, meta):
     if True:
         if key == 'BlockQuote':
-            return [latexBlock('\\begin{linenumbers}')] + val + [latexBlock('\\end{linenumbers}')]
+            return ([latexBlock('\\begin{verse}\n' +
+                                '\\begin{linenumbers}\n' +
+                                '\\modulolinenumbers[2]\n' +
+                                '\\firstlinenumber{1}')] +
+                    val +
+                    [latexBlock('\\end{linenumbers}\n\\end{verse}')])
         elif key == 'Note':
-            contents = stringify(val).partition(seperator_symbol)
-            if contents[0][0] == power_symbol:
+            contents = stringify(val)
+            if contents[0] == power_symbol:
                 walk_function = WalkFilter()
-                lemma = contents[0][1:].strip()
-                return [latexInline('\\Anote{')] + walk(val, walk_function.filter, "", {}) + [latexInline('}')]
-                #return [latexInline('\\Anote{' + lemma + '}{')] + val + [latexInline('}')]
+                return ([latexInline('\\Anote{')] +
+                        walk(val, walk_function.filter, "", {}) +
+                        [latexInline('}')])
 
 if __name__ == "__main__":
   toJSONFilter(parse)
