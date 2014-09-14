@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from pandocfilters import RawInline, RawBlock, walk, stringify, toJSONFilter, Str, Null
+from pandocfilters import RawInline, RawBlock, walk, stringify, toJSONFilter, Para, Note
 
 power_symbol = '|'
 seperator_symbol = ':'
@@ -17,7 +17,7 @@ ONCE PANDOC IMPLEMENTS A PROPER METHOD FOR FILTERING
 NOTES.
 """
 
-class WalkFilter(object):
+class WalkFilter:
     def __init__(self):
         self.divider = True
         self.divider_space = True
@@ -28,16 +28,41 @@ class WalkFilter(object):
             return walk(val, self.filter, "", {})
         elif self.powersym and val == power_symbol:
             self.powersym = False
-            return [Str("")]
+            return []
         elif self.powersym_space and key == 'Space':
             self.powersym_space = False
-            return [Str("")]
+            return []
         elif self.divider and val == seperator_symbol:
             self.divider = False
             return [latexInline('}{')]
         elif self.divider_space and not self.divider and key == 'Space':
             self.divider_space = False
-            return [Str("")]
+            return []
+    def filter_lemma(self, key, val, fmt, meta):
+        if key == 'Para':
+            return walk(val, self.filter_lemma, "", {})
+        elif self.powersym and val == power_symbol:
+            self.powersym = False
+            return []
+        elif self.powersym_space and key == 'Space':
+            self.powersym_space = False
+            return []
+        elif self.divider and val == seperator_symbol:
+            self.divider = False
+            return []
+        elif not self.divider:
+            return []
+    def filter_contents(self, key, val, fmt, meta):
+        if key == 'Para':
+            return [Para(walk(val, self.filter_contents, "", {}))]
+        if self.divider and val == seperator_symbol:
+            self.divider = False
+            return []
+        elif self.divider:
+            return []
+        elif self.divider_space and not self.divider and key == 'Space':
+            self.divider_space = False
+            return []
 
 def latexBlock(s):
     return RawBlock('latex', s)
@@ -46,7 +71,7 @@ def latexInline(s):
     return RawInline('latex', s)
 
 def parse(key, val, fmt, meta):
-    if fmt == latex:
+    if fmt == 'latex':
         if key == 'BlockQuote':
             return ([latexBlock('\\begin{verse}\n' +
                                 '\\begin{linenumbers}\n' +
@@ -61,6 +86,15 @@ def parse(key, val, fmt, meta):
                 return ([latexInline('\\Anote{')] +
                         walk(val, walk_function.filter, "", {}) +
                         [latexInline('}')])
+
+    elif key == 'Note':
+        contents = stringify(val)
+        if contents[0] == power_symbol:
+            lemma = WalkFilter().filter_lemma
+            contents = WalkFilter().filter_contents
+            return (walk(val, lemma, "", {}) +
+                    [Note(walk(val, contents, "", {}))])
+
 
 if __name__ == "__main__":
   toJSONFilter(parse)

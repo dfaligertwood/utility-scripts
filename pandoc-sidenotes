@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-from pandocfilters import RawInline, RawBlock, walk, stringify, toJSONFilter, Str, Null
+from pandocfilters import RawInline, RawBlock, walk, stringify, toJSONFilter, Note, Para
 
 power_symbol = '>'
-seperator_symbol = ':'
 string_keys = ['Str', 'Code', 'Math', 'LineBreak', 'Space', 'RawInline']
 other_keys = ( ['Plain', 'Para', 'CodeBlock', 'RawBlock', 'BlockQuote',
                 'OrderedList', 'BulletList', 'DefinitionList', 'Header',
@@ -25,10 +24,19 @@ class WalkFilter(object):
             return walk(val, self.filter, "", {})
         elif self.powersym and val == power_symbol:
             self.powersym = False
-            return [Str("")]
+            return []
         elif self.powersym_space and key == 'Space':
             self.powersym_space = False
-            return [Str("")]
+            return []
+    def html_filter(self, key, val, fmt, meta):
+        if key == 'Para':
+            return Para(walk(val, self.html_filter, "", {}))
+        elif self.powersym and val == power_symbol:
+            self.powersym = False
+            return []
+        elif self.powersym_space and key == 'Space':
+            self.powersym_space = False
+            return []
         
 def latexBlock(s):
     return RawBlock('latex', s)
@@ -44,6 +52,11 @@ def parse(key, val, fmt, meta):
             return ([latexInline('\\marginnote{')] +
                     walk(val, walk_function.filter, "", {}) +
                     [latexInline('}')])
+    elif key == 'Note':
+        contents = stringify(val)
+        if contents[0] == power_symbol:
+            walk_function = WalkFilter().html_filter
+            return [Note(walk(val, walk_function, "", {}))]
 
 if __name__ == "__main__":
   toJSONFilter(parse)
