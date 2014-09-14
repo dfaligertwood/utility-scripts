@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from pandocfilters import RawInline, RawBlock, walk, stringify, toJSONFilter, Para, Note
+from pandocfilters import RawInline, walk, stringify, toJSONFilter, Para, Note
 
 power_symbol = '|'
 seperator_symbol = ':'
@@ -23,9 +23,9 @@ class WalkFilter:
         self.divider_space = True
         self.powersym = True
         self.powersym_space = True
-    def filter(self, key, val, fmt, meta):
+    def filter_latex(self, key, val, fmt, meta):
         if key == 'Para':
-            return walk(val, self.filter, "", {})
+            return walk(val, self.filter_latex, "", {})
         elif self.powersym and val == power_symbol:
             self.powersym = False
             return []
@@ -64,36 +64,23 @@ class WalkFilter:
             self.divider_space = False
             return []
 
-def latexBlock(s):
-    return RawBlock('latex', s)
-
 def latexInline(s):
     return RawInline('latex', s)
 
 def parse(key, val, fmt, meta):
-    if fmt == 'latex':
-        if key == 'BlockQuote':
-            return ([latexBlock('\\begin{verse}\n' +
-                                '\\begin{linenumbers}\n' +
-                                '\\modulolinenumbers[2]\n' +
-                                '\\firstlinenumber{1}')] +
-                    val +
-                    [latexBlock('\\end{linenumbers}\n\\end{verse}')])
-        elif key == 'Note':
-            contents = stringify(val)
-            if contents[0] == power_symbol:
-                walk_function = WalkFilter()
-                return ([latexInline('\\Anote{')] +
-                        walk(val, walk_function.filter, "", {}) +
-                        [latexInline('}')])
-
-    elif key == 'Note':
+    if key == 'Note':
         contents = stringify(val)
         if contents[0] == power_symbol:
-            lemma = WalkFilter().filter_lemma
-            contents = WalkFilter().filter_contents
-            return (walk(val, lemma, "", {}) +
-                    [Note(walk(val, contents, "", {}))])
+            if fmt == 'latex':
+                arguments = WalkFilter().filter_latex
+                return ([latexInline('\\Anote{')] +
+                        walk(val, arguments, "", {}) +
+                        [latexInline('}')])
+            else:
+                lemma = WalkFilter().filter_lemma
+                contents = WalkFilter().filter_contents
+                return (walk(val, lemma, "", {}) +
+                        [Note(walk(val, contents, "", {}))])
 
 
 if __name__ == "__main__":
