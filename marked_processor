@@ -1,0 +1,4 @@
+#!/usr/bin/env zsh
+
+source /Users/dfaligertwood/.zshrc
+pandoc -s -S --bibliography /Users/dfaligertwood/.pandoc/default.json --filter /Users/dfaligertwood/scripts/pandoc-ednotes --filter /Users/dfaligertwood/scripts/pandoc-sidenotes -f markdown
