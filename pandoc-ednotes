@@ -46,7 +46,7 @@ def latexInline(s):
     return RawInline('latex', s)
 
 def parse(key, val, fmt, meta):
-    if True:
+    if fmt == latex:
         if key == 'BlockQuote':
             return ([latexBlock('\\begin{verse}\n' +
                                 '\\begin{linenumbers}\n' +
