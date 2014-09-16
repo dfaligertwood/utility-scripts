@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from pandocfilters import RawInline, RawBlock, walk, stringify, toJSONFilter, Note, Para
 
-power_symbol = '>'
+power_symbol = '~'
 string_keys = ['Str', 'Code', 'Math', 'LineBreak', 'Space', 'RawInline']
 other_keys = ( ['Plain', 'Para', 'CodeBlock', 'RawBlock', 'BlockQuote',
                 'OrderedList', 'BulletList', 'DefinitionList', 'Header',
@@ -49,7 +49,7 @@ def parse(key, val, fmt, meta):
         contents = stringify(val)
         if contents[0] == power_symbol:
             walk_function = WalkFilter()
-            return ([latexInline('\\normalmarginpar\\marginnote{')] +
+            return ([latexInline('\\reversemarginpar\\marginnote{')] +
                     walk(val, walk_function.filter, "", {}) +
                     [latexInline('}')])
     elif key == 'Note':
