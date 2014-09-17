@@ -1,0 +1,18 @@
+#!/bin/zsh
+
+# CSL JSON is the best method (imo) for integrating zotero and pandoc
+# as it is the internal format of both tools.
+# Unfotunately, the default zotero CSL JSON export has bad ids.
+# This one-liner fixes that. Requires jq for json manipulation.
+#
+# Has hard-coded paths (obviously) so anyone wishing to use this will
+# need to change that.
+#
+# Seperate to this is the fact that no editors (other than vim with
+# vim-pandoc) appear to support CSL JSON as a reference, which is
+# unfortunate. When I have time I'll write an Atom plugin for it, I
+# think. Alternatively, the following one-line (pipe your json bib
+# into it) will output a word list:
+# jq '.[].id | "@" + tostring'
+
+jq 'map(.id = ([(((( .author // .editor ) | .[0] | ( .family // ( .literal ))) // "Anon" ) | tostring | split(" ")[0] ), (( .issued."date-parts"[0][0] ) // empty ) , ( .id | "i" + tostring )] | join("_")))' /Users/dfaligertwood/bibliography.json > /Users/dfaligertwood/.pandoc/default.json
